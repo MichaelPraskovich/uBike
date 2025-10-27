@@ -19,6 +19,8 @@
 #include "bikeControl.h"
 
 #include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
 
@@ -239,46 +241,276 @@ static float power ( float base, int pwr )
     return pwr == 0 ? 1.0 : base * power ( base, pwr - 1 );
 }
 
-// Power curve fitting
-#define A -8.06357866e+06
-#define B -2.45457703e+05
-#define C 1.49961556e+01
-#define D -6.48778450e-02
-#define E 1.09741619e-04
-#define F 3.16050229e-09
-#define G -1.00397536e-07
-#define H 1.01525992e-08
-#define I -2.94388976e-10
-#define J 3.48657332e-12
-#define K -1.97940519e-14
-#define L 4.09271382e-17
-#define M 5.62850051e-02
+// // Power curve fitting
+// #define A -8.06357866e+06
+// #define B -2.45457703e+05
+// #define C 1.49961556e+01
+// #define D -6.48778450e-02
+// #define E 1.09741619e-04
+// #define F 3.16050229e-09
+// #define G -1.00397536e-07
+// #define H 1.01525992e-08
+// #define I -2.94388976e-10
+// #define J 3.48657332e-12
+// #define K -1.97940519e-14
+// #define L 4.09271382e-17
+// #define M 5.62850051e-02
 
-static uint16_t calc_watts()
+// static uint16_t calc_watts()
+// {
+//     // If no motion return 0
+//     if ( act_rpm == 0 ) {
+//         return 0;
+//     }
+
+//     // Caculate wats in N*m
+//     float pwr = ( A + B * act_rpm + C * power ( act_rpm, 2 )
+//                   + D * power ( act_rpm, 3 ) + E * power ( act_rpm, 4 )
+//                   + F * power ( act_rpm, 5 ) )
+//                     * ( G + H * SET_RES.value + I * power ( SET_RES.value, 2 )
+//                         + J * power ( SET_RES.value, 3 )
+//                         + K * power ( SET_RES.value, 4 )
+//                         + L * power ( SET_RES.value, 5 ) )
+//                 + M;
+
+//     // Calculate watts from torque
+//     pwr *= act_rpm;
+
+//     // If motion don't return less than one
+//     if ( pwr < 1.0 ) {
+//         return 1;
+//     }
+//     return pwr;
+// }
+
+// The following "Phyics-Based" model is based on analysis of coast-down data
+// collected from an s22i bike. It estimates the power required to maintain a
+// given flywheel speed (in RPM) at a given eddy-current brake level (1..22).
+// The model accounts for both eddy-current drag and Coulomb friction losses,   
+// and can be adapted to either crank or flywheel speed sensors.
+//
+// Coast Down data used:
+// L=1.1
+// time_s, rpm
+// 0, 60
+// 0.5, 59
+// 1.1, 58
+// 1.5, 56
+// 2.1, 53
+// 3.1, 49
+// 3.5, 46
+// 4.5, 42
+// 5.5, 38
+// 6.5, 34
+// 8, 30
+// 9.5, 25
+// 11.5, 0
+
+// L=1.2
+// time_s, rpm
+// 0, 59
+// 1, 58
+// 1.5, 55
+// 2, 52
+// 2.5, 49
+// 3.5, 45
+// 4.5, 41
+// 5.5, 37
+// 6.5, 33
+// 7.5, 29
+// 9.5, 25
+// 11.5, 0
+
+// L=4.1
+// time_s,rpm
+// 0, 60
+// 0.5, 59
+// 1, 58
+// 2, 57
+// 2.5, 54
+// 3, 51
+// 4, 48
+// 4.5, 44
+// 5.5, 40
+// 6.5, 36
+// 7.5, 32
+// 9, 27
+// 11, 23
+// 13, 0
+
+// L=4.2
+// time_s, rpm
+// 0, 60
+// 0.5, 59
+// 1.5, 57
+// 2, 55
+// 2.5, 51
+// 3.5, 47
+// 4, 44
+// 5, 40
+// 6, 36
+// 7, 31
+// 8.5, 27
+// 10.5, 22
+// 12.5, 0
+
+// L=10.1
+// time_s, rpm
+// 0, 61
+// 0.3, 60
+// 0.8, 59
+// 1.3, 56
+// 2.3, 51
+// 2.8, 44
+// 4.3, 36
+// 6.3, 28
+// 7.8, 0
+
+// L=10.2
+// time_s, rpm
+// 0, 60
+// 0.1, 59
+// 1, 57
+// 2, 54
+// 2.5, 49
+// 3.5, 42
+// 5, 34
+// 7, 26
+// 9, 0
+
+// L=13.1
+// time_s, rpm
+// 0, 60
+// 1, 58
+// 1.5, 52
+// 3, 43
+// 5, 32
+// 7, 0
+
+// L=13.2
+// time_s, rpm
+// 0, 59
+// 0.2, 57
+// 0.7, 54
+// 1.7, 47
+// 3.2, 38
+// 5.2, 0
+
+// L=16.1
+// time_s, rpm
+// 0, 61
+// 0.5, 59
+// 1.5, 52
+// 3, 41
+// 5, 0
+
+// L=16.2
+// time_s, rpm
+// 0, 59
+// 0.1, 58
+// 0.5, 56
+// 1.5, 50
+// 3, 40
+// 5, 0
+
+// L=18.1
+// time_s, rpm
+// 0, 61
+// 0.9, 59
+// 1.9, 52
+// 3.4, 0
+
+// L=18.2
+// time_s, rpm
+// 0, 61
+// 0.1, 59
+// 1.1, 51
+// 3.1, 0
+
+// L=20.1
+// time_s, rpm
+// 0, 60
+// 0.5, 58
+// 1.5, 48
+// 3.5, 0
+
+// L=20.2
+// time_s, rpm
+// 0, 60
+// 0.7, 56
+// 2.3, 46
+// 3.7, 0
+
+// L=22.1
+// time_s, rpm
+// 0, 60
+// 0.6, 56
+// 2.6, 0
+
+// L=22.2
+// time_s, rpm
+// 0, 59
+// 0.5, 55
+// 2, 0
+
+/*** BIKE CONSTANTS ***/
+#define SENSOR_IS_CRANK            1          // 1 = rpm is crank cadence; 0 = flywheel
+#define R_FLYWHEEL_PER_CRANK       5.317f
+#define DRIVETRAIN_ETA             0.95f
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+static inline double rpm_to_rads(double rpm){ return rpm * (2.0 * M_PI / 60.0); }
+
+/*** Eddy-current k(L): log-linear interpolation over anchors ***/
+static const int    K_LVLS[] = {  1,   4,   10,   13,   16,    18,    20,    22 };
+static const double K_VALS[] = { 0.0308857954, 0.0308857954, 0.0458868358, 0.0619309863,
+                                 0.0753609278, 0.1123894586, 0.1123894586, 0.1635043007 };
+static const int K_COUNT = sizeof(K_LVLS)/sizeof(K_LVLS[0]);
+
+static double k_for_level(int L){
+    if (L <= K_LVLS[0]) return K_VALS[0];
+    if (L >= K_LVLS[K_COUNT-1]) return K_VALS[K_COUNT-1];
+    for (int i=0;i<K_COUNT-1;i++){
+        int L0 = K_LVLS[i], L1 = K_LVLS[i+1];
+        if (L >= L0 && L <= L1){
+            double y0 = log(K_VALS[i]), y1 = log(K_VALS[i+1]);
+            double t  = (double)(L - L0) / (double)(L1 - L0);
+            return exp(y0 + t*(y1 - y0));
+        }
+    }
+    return K_VALS[K_COUNT-1];
+}
+
+/*** Coulomb friction torque vs level (N·m) ***/
+static inline double Tc_for_level(int L){
+    const double a = 0.0166779771;   // N·m per level
+    const double b = 0.4338270944;   // N·m base
+    double Tc = b + a * (double)L;
+    return (Tc > 0.0) ? Tc : 0.0;
+}
+
+/*** CORE API: pass crank rpm and resistance level ***/
+uint16_t calc_watts_physics_params(double rpm_crank, int level)
 {
-    // If no motion return 0
-    if ( act_rpm == 0 ) {
-        return 0;
-    }
+    if (rpm_crank <= 0.0) return 0;
+    if (level < 1) level = 1; else if (level > 22) level = 22;
 
-    // Caculate wats in N*m
-    float pwr = ( A + B * act_rpm + C * power ( act_rpm, 2 )
-                  + D * power ( act_rpm, 3 ) + E * power ( act_rpm, 4 )
-                  + F * power ( act_rpm, 5 ) )
-                    * ( G + H * SET_RES.value + I * power ( SET_RES.value, 2 )
-                        + J * power ( SET_RES.value, 3 )
-                        + K * power ( SET_RES.value, 4 )
-                        + L * power ( SET_RES.value, 5 ) )
-                + M;
+    // flywheel angular speed
+    double rpm_fly = SENSOR_IS_CRANK ? rpm_crank * (double)R_FLYWHEEL_PER_CRANK : rpm_crank;
+    double omega   = rpm_to_rads(rpm_fly); // rad/s
 
-    // Calculate watts from torque
-    pwr *= act_rpm;
+    // model
+    double k  = k_for_level(level);   // W / (rad/s)^2
+    double Tc = Tc_for_level(level);  // N·m
+    double Pf = k*(omega*omega) + Tc*omega;      // flywheel watts
+    if (!(Pf > 0.0)) Pf = 0.0;
 
-    // If motion don't return less than one
-    if ( pwr < 1.0 ) {
-        return 1;
-    }
-    return pwr;
+    double W  = Pf / (double)DRIVETRAIN_ETA;     // pedal watts
+    if (W < 1.0) W = 1.0;
+    if (W > 65535.0) W = 65535.0;
+    return (uint16_t)(W + 0.5);
 }
 
 static void updateResistance()
@@ -307,6 +539,6 @@ bike_data_t getBikeData()
     data.act_rpm = act_rpm;
     data.disp_res = disp_res;
     data.tgt_inc = SET_INC.value;
-    data.watts = calc_watts();
+    data.watts = calc_watts_physics_params((double)act_rpm, calc_res());
     return data;
 }
