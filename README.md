@@ -1,90 +1,153 @@
 # Universal Bike Controller
-The Universal Bike Controller is an open-source project aimed at providing a drop-in replacement for the factory console on NordicTrack® S-series exercise bikes (s10i, s15i, s22i, and s27i). This project allows you to upgrade and customize your bike's control system with new features and improvements.
+This repository is a fork of [nategreco/uBike](https://github.com/nategreco/uBike), an open-source drop-in replacement for the NordicTrack S-series studio cycle consoles.
 
-## Explanation
-The factory consoles on NordicTrack® S-series bikes may lack certain features or customization options that users desire. The Universal Bike Controller project addresses these limitations by providing an open-source solution that simplifies the hardware on the bike while unlocking connectivity to other third-party apps (Zwift®, Rouvy®, Peloton®) and smart devices.
+The changes in this fork include an **LLM-generated, physics-based power calculation** for estimating watts. The motivation was based on an observation that resistance levels **2-8 consistently report only 1 W**, raising concerns that other resistance levels may misestimate power output.
 
-![Universal Bike Controller](images/diagonal-with-tablet.jpg "Universal Bike Controller")
-(Tablet not included)
+## Measurements Taken
+Flywheel Diameter: 455.65 mm
+Flywheel Pulley Diameter: 58.3 mm
+Crank Pulley Diameter: 310 mm
+Crank -> Flywheel Ratio: ~5.317 : 1
 
-## Features
-- Drop-in replacement controller for the iFit console
-  - **Note - This controller and the OEM console cannot be used together**
-- Full incline and resistance control via OEM handlebar pushbuttons
-- Wireless connectivity to a variety of third-party applications
-- 3.5" TFT touchscreen for reseting elapsed time
-- USB Type A fast charger port for charging
-- Over-the-air support for future software upgrades
+## Assumptions Made
+- The flywheel mass was provided at **14.515 kg (32 lb)** -- the advertised weight cited by NordicTrack and several independent reviews.
+- Mechanical efficiency figure was estimated at 0.95.
 
-## Installation
-The replacement uBike console mounts in the current location of the weight tray and plugs into the same two cables as the factory console. Installation is as simple as follows:
-1. Turn off the bike
-1. Remove the 4 screws from the underside of the weight tray (save them) and remove the weight tray
-1. Place the uBike controller in its place, with the connectors facing away from the rider
-1. Use the same 4 screws removed from the weight tray to secure the uBike controller
-1. Unplug the 2 cables from the factory console and plug them into the new uBike controller
-  * **Please see note below on compatability if you do not have a red and yellow connector**
+## Coast-Down Experiment Data
+Anchor values for the model were computed from several **60 rpm → 0 rpm coast down experiments**.
 
-## Compatibility
-The Universal Bike Controller is designed to be compatible with the following NordicTrack® S-series exercise bikes:
-- s10i
-- s15i
-- s22i
-- s27i
+The results of these experiments are provided below. 
 
-All of these versions have been tested and are working.  Additionally, since 2021 bikes have stopped shipping with the yellow and red mini-DIN connectors to the console, instead they have cables coming directly out of the console.  **If your bike does not have the red and yellow connectors** you will need to buy the cables below:
-* Yellow mini-DIN-6 Connector - PN 411540 ([eBay](https://www.ebay.com/itm/255061719835)/[HydraFitness](https://hydrafitnessparts.com/collections/stationary-bike-wires-and-wire-harness/products/nordictrack-comm-s22i-s15i-s10i-stationary-bike-upper-wire-harness-411540))
-* Red mini-DIN-8 Connector - PN 411536 ([eBay](https://www.ebay.com/itm/265237954787)/[HydraFitness](https://hydrafitnessparts.com/collections/stationary-bike-wires-and-wire-harness/products/nordictrack-comm-s22i-s15i-s10i-stationary-bike-extension-wire-harness-411536))
+**Note:** This data was gathered by filming the uBike's console RPM readout. I may refine these measurements later as determining the precise zero-RPM timestamp from the footage introduced minor uncertainty.
 
-## Additional Reference Photos
-![Universal Bike Controller](images/side-no-screen.jpg "Universal Bike Controller")
-![Universal Bike Controller](images/diagonal-no-screen.jpg "Universal Bike Controller")
-![Universal Bike Controller](images/cable-connections.jpg "Universal Bike Controller")
-![Universal Bike Controller](images/controller-screen.jpg "Universal Bike Controller")
-![Universal Bike Controller](images/landscape-handlebar-with-tablet.jpg "Universal Bike Controller")
-![Universal Bike Controller](images/portrait-with-tablet.jpg "Universal Bike Controller")
-![Universal Bike Controller](images/pairing-screen-tablet.jpg "Universal Bike Controller")
-![Universal Bike Controller](images/pairing-screen-modes-tablet.jpg "Universal Bike Controller")
+<details> <summary><b>Resistance 1</b></summary>
 
-## Development
-Contributing to the project is encouraged and can be done by testing and reporting issues or software/hardware development.
+| **time_s** | **rpm (run 1)** | **rpm (run 2)** |
+| :--------: | :-------------: | :-------------: |
+|     0.0    |        60       |        59       |
+|     0.5    |        59       |                 |
+|     1.0    |                 |        58       |
+|     1.1    |        58       |                 |
+|     1.5    |        56       |        55       |
+|     2.0    |                 |        52       |
+|     2.1    |        53       |                 |
+|     2.5    |                 |        49       |
+|     3.1    |        49       |                 |
+|     3.5    |        46       |        45       |
+|     4.5    |        42       |        41       |
+|     5.5    |        38       |        37       |
+|     6.5    |        34       |        33       |
+|     7.5    |                 |        29       |
+|     8.0    |        30       |                 |
+|     9.5    |        25       |        25       |
+|    11.5    |        0        |        0        |
 
-### Hardware Overview
-The hardware is composed of the following components:
-* Controller PCB board
-* [4D LCD 3.5" Capacitive Touch TFT-LCD](https://4dsystems.com.au/products/4dlcd-35480320-ctp-clb-ips/) 
-* Controller enclosure
-* Base mount for the enclosure
+<details> <summary><b>Resistance 4</b></summary>
 
-### Software Tools
-* FreeCAD - Housing modeling
-* KiCad - PCB Design
-* nRF Connect 2.3.0 w/ Visual Studio Code extension - Firmware Development
-* Python - Misc development and testing scripts
+| **time_s** | **rpm (run 1)** | **rpm (run 2)** |
+| :--------: | :-------------: | :-------------: |
+|     0.0    |        60       |        60       |
+|     0.5    |        59       |        59       |
+|     1.0    |        58       |                 |
+|     1.5    |                 |        57       |
+|     2.0    |        57       |        55       |
+|     2.5    |        54       |        51       |
+|     3.0    |        51       |                 |
+|     3.5    |                 |        47       |
+|     4.0    |        48       |        44       |
+|     4.5    |        44       |                 |
+|     5.0    |                 |        40       |
+|     5.5    |        40       |                 |
+|     6.0    |                 |        36       |
+|     6.5    |        36       |                 |
+|     7.0    |                 |        31       |
+|     7.5    |        32       |                 |
+|     8.5    |                 |        27       |
+|     9.0    |        27       |                 |
+|    10.5    |                 |        22       |
+|    11.0    |        23       |                 |
+|    12.5    |                 |        0        |
+|    13.0    |        0        |                 |
 
-### Building Firmware
-* Open folder `firmware/zephyr-project` in VS Code
-* Open nRF Connect extension and press 'Create Build Configuration'
-* Select 'ubike_v03' board
-* Use defaults and press 'Build Configuration'
-* Should produce a binary in `firmware/zephyr-project/build/zephyr/zephyr.hex`
+<details> <summary><b>Resistance 10</b></summary>
 
-### Flashing
-* Open nRF Connect Programmer
-* Press 'Add file' and select `firmware/zephyr-project/build/zephyr/zephyr.hex`
-* Connect a [nRF52840 DK development board](https://www.nordicsemi.com/Products/Development-hardware/nRF52840-DK) or other SWD/JTAG programmer
-* Select the development board as programming device
-* Press 'Erase & write'
+| **time_s** | **rpm (run 1)** | **rpm (run 2)** |
+| :--------: | :-------------: | :-------------: |
+|     0.0    |        61       |        60       |
+|     0.1    |                 |        59       |
+|     0.3    |        60       |                 |
+|     0.8    |        59       |                 |
+|     1.0    |                 |        57       |
+|     1.3    |        56       |                 |
+|     2.0    |                 |        54       |
+|     2.3    |        51       |                 |
+|     2.5    |                 |        49       |
+|     2.8    |        44       |                 |
+|     3.5    |                 |        42       |
+|     4.3    |        36       |                 |
+|     5.0    |                 |        34       |
+|     6.3    |        28       |                 |
+|     7.0    |                 |        26       |
+|     7.8    |        0        |                 |
+|     9.0    |                 |        0        |
 
+<details> <summary><b>Resistance 13</b></summary>
 
-## Authors
-* [@nategreco](https://github.com/nategreco)
+| **time_s** | **rpm (run 1)** | **rpm (run 2)** |
+| :--------: | :-------------: | :-------------: |
+|     0.0    |        60       |        59       |
+|     0.2    |                 |        57       |
+|     0.7    |                 |        54       |
+|     1.0    |        58       |                 |
+|     1.5    |        52       |                 |
+|     1.7    |                 |        47       |
+|     3.0    |        43       |                 |
+|     3.2    |                 |        38       |
+|     5.0    |        32       |                 |
+|     5.2    |                 |        0        |
+|     7.0    |        0        |                 |
 
-## Need Hardware?
-[Check out our store on Tindie](https://www.tindie.com/products/grecoengineer/universal-bike-controller/)
+<details> <summary><b>Resistance 16</b></summary>
 
-**Disclaimer**: This project is not affiliated with or endorsed by ICON Health Fitness, Inc (Nordictrack®) or its parent company. Use this software at your own risk, and be aware that modifying your exercise bike may void any warranties.
+| **time_s** | **rpm (run 1)** | **rpm (run 2)** |
+| :--------: | :-------------: | :-------------: |
+|     0.0    |        61       |        59       |
+|     0.1    |                 |        58       |
+|     0.5    |        59       |        56       |
+|     1.5    |        52       |        50       |
+|     3.0    |        41       |        40       |
+|     5.0    |        0        |        0        |
 
----
+<details> <summary><b>Resistance 18</b></summary>
 
-Contributions, feedback, and bug reports are welcome. Feel free to fork, contribute, or open issues to improve the Universal Bike Controller project!
+| **time_s** | **rpm (run 1)** | **rpm (run 2)** |
+| :--------: | :-------------: | :-------------: |
+|     0.0    |        61       |        61       |
+|     0.1    |                 |        59       |
+|     0.9    |        59       |                 |
+|     1.1    |                 |        51       |
+|     1.9    |        52       |                 |
+|     3.1    |                 |        0        |
+|     3.4    |        0        |                 |
+
+<details> <summary><b>Resistance 20</b></summary>
+
+| **time_s** | **rpm (run 1)** | **rpm (run 2)** |
+| :--------: | :-------------: | :-------------: |
+|     0.0    |        60       |        60       |
+|     0.5    |        58       |                 |
+|     0.7    |                 |        56       |
+|     1.5    |        48       |                 |
+|     2.3    |                 |        46       |
+|     3.5    |        0        |                 |
+|     3.7    |                 |        0        |
+
+<details> <summary><b>Resistance 22</b></summary>
+
+| **time_s** | **rpm (run 1)** | **rpm (run 2)** |
+| :--------: | :-------------: | :-------------: |
+|     0.0    |        60       |        59       |
+|     0.5    |                 |        55       |
+|     0.6    |        56       |                 |
+|     2.0    |                 |        0        |
+|     2.6    |        0        |                 |
