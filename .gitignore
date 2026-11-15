@@ -6,3 +6,6 @@ hardware/board/kicad/uBike-backups/*
 firmware/zephyr-project/.*
 firmware/zephyr-project/build*/
 firmware/zephyr-project/*code-workspace
+
+# Firmware image signing private key — never commit
+private-key.pem
